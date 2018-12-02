@@ -1,1 +1,1 @@
-# CoopHordeShooterGame
+A Third Person Coop Horde Shooter being made in Unreal Engine 4. For the purpose of learning networking. 
