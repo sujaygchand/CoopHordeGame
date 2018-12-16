@@ -4,64 +4,70 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "SGameMode.generated.h"
+#include "SHordeGameMode.generated.h"
+
+enum class EWaveState : uint8;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnActorKilled, AActor*, VictimActor, AActor*, KillerActor, AController*, KillerController);
 
 /**
- *  The Game Mode header class
+ * 
  */
 UCLASS()
-class COOPHORDEGAME_API ASGameMode : public AGameModeBase
+class COOPHORDEGAME_API ASHordeGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	
-/* Public Functions */
 public:
 
-	ASGameMode();
+	ASHordeGameMode();
 
 	virtual void StartPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
 	
-/* Protected Variables */
+	UPROPERTY(BlueprintAssignable, Category = "GameMode")
+	FOnActorKilled OnActorKilled;
+
 protected:
 
 	FTimerHandle TimerHandle_BotSpawner;
 
 	FTimerHandle TimerHandle_NextWaveStart;
 
-	// Bots to spawn in current array
-	UPROPERTY(BlueprintReadOnly, Category = "GameMode")
+	// Bots to spawn in current wave
 	int32 NumOfBotsToSpawn;
 
-	UPROPERTY(BlueprintReadOnly, Category = "GameMode")
 	int32 WaveCount;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GameMode")
-	float TimeBetweenWaves; 
-
-	bool bPreapreWaveActive;
-
-	/* Protected functions */
+	float TimeBetweenWaves;
+	
 protected:
-
-	// Hook for BP to spawn a single bot
+	
+	// Bp function for spawn
 	UFUNCTION(BlueprintImplementableEvent, Category = "GameMode")
 	void SpawnNewBot();
 
-	// Start Spawning Bots
+	// Start Spawning bots
 	void StartWave();
 
-	// Stop spawning Bots
+	// Ends wave
 	void EndWave();
 
-	// Spawns bots on timer 
 	void SpawnBotTimerElapsed();
 
-	// Set Timer for next wave
+	// Set timer for next startwave
 	void PrepareForNextWave();
 
-	// Checks wave state
 	void CheckWaveState();
+
+	void CheckAnyPlayerAlive();
+
+	void GameOver();
+
+	void SetWaveState(EWaveState NewState);
+
+	void  RespawnPlayer();
 
 };
