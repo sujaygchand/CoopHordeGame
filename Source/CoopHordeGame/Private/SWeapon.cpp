@@ -164,7 +164,7 @@ void ASWeapon::ApplyDamage(EPhysicalSurface SurfaceType, AActor* HitActor, FVect
 		ActualDamage *= 6.0f;
 	}
 
-	UGameplayStatics::ApplyPointDamage(HitActor, ActualDamage, ShotDirection, Hit, Owner->GetInstigatorController(), this, DamageType);
+	UGameplayStatics::ApplyPointDamage(HitActor, ActualDamage, ShotDirection, Hit, Owner->GetInstigatorController(), this->GetOwner(), DamageType);
 
 }
 

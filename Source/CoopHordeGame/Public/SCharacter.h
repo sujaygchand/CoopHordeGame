@@ -43,56 +43,52 @@ protected:
 
 	void ChangeWeapon(float value);
 
-	void StartFire();
-
-	void StopFire();
-
 	void ReloadWeapon();
 
 	UFUNCTION()
-	void OnHealthChanged(USHealthComponent* HealthComp, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+		void OnHealthChanged(USHealthComponent* HealthComp, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
 	// Camera
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UCameraComponent* CameraComp;
+		UCameraComponent* CameraComp;
 
 	// Spring arm
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	USpringArmComponent* SpringArmComp;
+		USpringArmComponent* SpringArmComp;
 
 	// Gun Slots
 	UPROPERTY(AdvancedDisplay, EditAnywhere, BlueprintReadWrite, Category = "Components")
-	UChildActorComponent* GunSlot;
+		UChildActorComponent* GunSlot;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
-	USHealthComponent* PlayerHealthComp;
+		USHealthComponent* PlayerHealthComp;
 
 	// Current Weapon
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "Weapon")
-	ASWeapon* CurrentWeapon;
+		ASWeapon* CurrentWeapon;
 
 	// List of Weapons
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Weapon")
-	TArray<TSubclassOf<ASWeapon>> Weapons;
+		TArray<TSubclassOf<ASWeapon>> Weapons;
 
 	bool bCanZoom;
 
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite)
-	bool bDied;
+		bool bDied;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Player")
-	float ZoomedFOV;
+		float ZoomedFOV;
 
 	/* Default FOV */
 	float DefaultFOV;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Player", meta = (ClampMin = 0.1f, ClampMax = 100.0f))
-	float ZoomInterpSpeed;
+		float ZoomInterpSpeed;
 
 	/* Current Weapon Index */
 	int32 CurrentWeaponIndex = 0;
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -104,6 +100,16 @@ public:
 	// Checks if character is crouching 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool bIsCrouching = false;
-	
+
 	void CheckCurrentWeapon();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TArray<TSubclassOf<APawn>> Allies;
+
+	UFUNCTION(BlueprintCallable, Category = "Player")
+	void StartFire();
+
+	UFUNCTION(BlueprintCallable, Category = "Player")
+	void StopFire();
+
 };

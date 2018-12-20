@@ -118,8 +118,8 @@ protected:
 
 	float TimeBetweenShots;
 
-	// Bullet spread
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Weapon")
+	// Bullet spread in degrees
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Weapon", meta = (ClampMin=0.0f))
 	float BulletSpread;
 
 	UPROPERTY(ReplicatedUsing=OnRep_HitScanTrace)

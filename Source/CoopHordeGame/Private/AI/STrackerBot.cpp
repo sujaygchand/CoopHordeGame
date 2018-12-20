@@ -12,6 +12,14 @@
 #include "SCharacter.h"
 #include "Components/AudioComponent.h"
 
+static int32 DebugTrackerBotDrawing = 0;
+
+FAutoConsoleVariableRef CVARDebugTrackerBotDrawing(
+	TEXT("COOP.DebugTrackerBot"),
+	DebugTrackerBotDrawing,
+	TEXT("Draw Debug for Tracker Bot"),
+	ECVF_Cheat);
+
 /**
 * Tracker Bot AI cpp class
 */
@@ -50,8 +58,8 @@ ASTrackerBot::ASTrackerBot()
 	MovementForce = 400;
 	RequiredDistanceToTarget = 150;
 	
-	ExplosionDamage = 40;
-	ExplosionRadius = 200;
+	ExplosionDamage = 60;
+	ExplosionRadius = 350;
 	PowerLevel = 0;
 	MaxPowerLevel = 4;
 	
@@ -85,17 +93,45 @@ void ASTrackerBot::BeginPlay()
  */
 FVector ASTrackerBot::GetNextPathPoint()
 {
-	ACharacter* PlayerPawn = UGameplayStatics::GetPlayerCharacter(this, 0);
+	UE_LOG(LogTemp, Warning, TEXT("Temp Pawn:"))
+	AActor* BestTarget = nullptr;
 
-	if (PlayerPawn == nullptr) {
-		return GetActorLocation();
+	float NearestTargetDistance = FLT_MAX;
+
+
+	for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It) {
+		APawn* TempPawn = It->Get();
+
+		UE_LOG(LogTemp, Warning, TEXT("Temp Pawn: %s"), *TempPawn->GetName())
+
+		if (TempPawn == nullptr || USHealthComponent::IsAllied(TempPawn, this)) {
+			continue;
+		}
+
+		USHealthComponent* TestHealthComp = Cast<USHealthComponent>(TempPawn->GetComponentByClass(USHealthComponent::StaticClass()));
+		if (TestHealthComp && TestHealthComp->GetHealth() > 0.0f) {
+			
+			float Distance = (TempPawn->GetActorLocation() - GetActorLocation()).Size();
+
+			if (NearestTargetDistance >= Distance) {
+				
+				BestTarget = TempPawn;
+				NearestTargetDistance = Distance;
+			}
+		}
 	}
-	
-	// Sets point on navigation volume
-	UNavigationPath* NavPath = UNavigationSystemV1::FindPathToActorSynchronously(this, GetActorLocation(), PlayerPawn);
 
-	if (NavPath && NavPath->PathPoints.Num() > 1) {
-		return NavPath->PathPoints[1];
+	if (BestTarget) {
+
+		// Sets point on navigation volume
+		UNavigationPath* NavPath = UNavigationSystemV1::FindPathToActorSynchronously(this, GetActorLocation(), BestTarget);
+
+		GetWorldTimerManager().ClearTimer(TimerHandel_RefreshPath);
+		GetWorldTimerManager().SetTimer(TimerHandel_RefreshPath, this, &ASTrackerBot::RefreshPath, 5.0f, false);
+
+		if (NavPath && NavPath->PathPoints.Num() > 1) {
+			return NavPath->PathPoints[1];
+		}
 	}
 
 	// Failed to find path
@@ -152,7 +188,9 @@ void ASTrackerBot::SelfDestruct()
 
 		UGameplayStatics::ApplyRadialDamage(this, NewExplosionDamage, GetActorLocation(), ExplosionRadius, nullptr, IgnoredActors, this, GetInstigatorController(), true);
 
-		DrawDebugSphere(GetWorld(), GetActorLocation(), ExplosionRadius, 12, FColor::Emerald, false, 2.0f, 0, 1.0f);
+		if (DebugTrackerBotDrawing > 0) {
+			DrawDebugSphere(GetWorld(), GetActorLocation(), ExplosionRadius, 12, FColor::Emerald, false, 2.0f, 0, 1.0f);
+		}
 
 		SetLifeSpan(2.0f);
 
@@ -185,13 +223,17 @@ void ASTrackerBot::Patrol()
 
 		MeshComp->AddForce(ForceDirection, NAME_None, bUseVelocityChange);
 
-		DrawDebugDirectionalArrow(GetWorld(), GetActorLocation(), GetActorLocation() + ForceDirection, 32, FColor::Yellow, false, 2.0f, 1.0f, 1.0f);
+		if (DebugTrackerBotDrawing > 0) {
+			DrawDebugDirectionalArrow(GetWorld(), GetActorLocation(), GetActorLocation() + ForceDirection, 32, FColor::Yellow, false, 2.0f, 1.0f, 1.0f);
+		}
 	}
 	else {
 		NextPathPoint = GetNextPathPoint();
 	}
 
-	DrawDebugSphere(GetWorld(), NextPathPoint, 20, 12, FColor::Yellow, false, 2.0f, 1.0f, 1.0f);
+	if (DebugTrackerBotDrawing > 0) {
+		DrawDebugSphere(GetWorld(), NextPathPoint, 20, 12, FColor::Yellow, false, 2.0f, 1.0f, 1.0f);
+	}
 }
 
 /*
@@ -223,6 +265,12 @@ void ASTrackerBot::BoostPowerLevel()
 
 }
 
+
+void ASTrackerBot::RefreshPath()
+{
+	NextPathPoint = GetNextPathPoint();
+}
+
 // Called every frame
 void ASTrackerBot::Tick(float DeltaTime)
 {
@@ -244,7 +292,7 @@ void ASTrackerBot::NotifyActorBeginOverlap(AActor* OtherActor)
 
 		ASCharacter* PlayerPawn = Cast<ASCharacter>(OtherActor);
 
-		if (PlayerPawn) {
+		if (PlayerPawn && !USHealthComponent::IsAllied(OtherActor, this)) {
 			// We overlapped with a player
 			if (Role == ROLE_Authority) {
 				// Start self destuction sequence

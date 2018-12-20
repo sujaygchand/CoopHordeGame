@@ -3,6 +3,7 @@
 #include "SHealthComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "SHordeGameMode.h"
+#include "SCharacter.h"
 
 // Sets default values for this component's properties
 USHealthComponent::USHealthComponent()
@@ -10,6 +11,8 @@ USHealthComponent::USHealthComponent()
 	DefaultHealth = 100;
 	bIsDead = false;
 	bIsDeadDoOnce = true;
+
+	TeamNumber = 255;
 
 	SetIsReplicated(true);
 }
@@ -30,12 +33,27 @@ void USHealthComponent::BeginPlay()
 	}
 
 	Health = DefaultHealth;
+
+	//SmartOwner = bIsSmartOwner ? Cast<ASCharacter>(GetOwner()) : nullptr;
 	
 }
 
 void USHealthComponent::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * DamageType, AController * InstigatedBy, AActor * DamageCauser)
 {
+	/*/
+	if (bIsSmartOwner) {
+		if (SmartOwner) {
+			if (IsFriendly(SmartOwner, InstigatedBy->GetPawn())) {
+				return;
+			}
+		}
+	} */
+		
 	if (Damage <= 0.0f || bIsDead) {
+		return;
+	}
+
+	if (DamageCauser != DamagedActor && IsAllied(DamagedActor, DamageCauser)) {
 		return;
 	}
 
@@ -81,6 +99,51 @@ void USHealthComponent::Heal(float HealAmount)
 float USHealthComponent::GetHealth() const
 {
 	return Health;
+}
+
+// If the owner has allies, stop friendly fire
+bool USHealthComponent::IsFriendly(AActor* Owner, AActor* Attacker)
+{
+	if (Owner && Attacker) {
+
+		ASCharacter* TempOwner = Cast<ASCharacter>(Owner);
+		ASCharacter* AttackingPawn = Cast<ASCharacter>(Attacker);
+
+		if (AttackingPawn && TempOwner) {
+
+			for (TSubclassOf<APawn> TempPawn : TempOwner->Allies) {
+
+				//UE_LOG(LogTemp, Warning, TEXT("Friend: %s"), *TempPawn->GetName())
+
+				//UE_LOG(LogTemp, Warning, TEXT("Attacker: %s"), *AttackingPawnClass->GetName())
+
+				if (TempPawn == AttackingPawn->GetClass()) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+	return false;
+}
+
+bool USHealthComponent::IsAllied(AActor* ActorA, AActor* ActorB)
+{
+	//Assume friendly
+	if (ActorA == nullptr || ActorB == nullptr) {
+		return true;
+	}
+
+	USHealthComponent* HealthCompA = Cast<USHealthComponent>(ActorA->GetComponentByClass(USHealthComponent::StaticClass()));
+	USHealthComponent* HealthCompB = Cast<USHealthComponent>(ActorB->GetComponentByClass(USHealthComponent::StaticClass()));
+
+	//Assume not friendly
+	if (HealthCompA == nullptr || HealthCompB == nullptr) {
+		return true;
+	}
+
+	return HealthCompA->TeamNumber == HealthCompB->TeamNumber;
 }
 
 void USHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {

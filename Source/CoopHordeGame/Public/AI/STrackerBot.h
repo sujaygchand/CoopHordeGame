@@ -81,6 +81,8 @@ protected:
 
 	FTimerHandle TimerHandel_BoostPowerLevel;
 
+	FTimerHandle TimerHandel_RefreshPath;
+
 	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
 	float SelfDamageInterval;
 
@@ -103,6 +105,8 @@ protected:
 	void PlayRollSound();
 
 	void BoostPowerLevel();
+
+	void RefreshPath();
 
 public:	
 	// Called every frame
